@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 
 pub struct AttestationExplorer {
-    listed_attestations: UnorderedMap<String, Attestation>,
+    listed_attestations: UnorderedMap<u32, Attestation>,
+    count: u32,
 }
 
 #[near_bindgen]
@@ -16,17 +17,19 @@ impl AttestationExplorer {
     pub fn new() -> Self {
         Self {
             listed_attestations: UnorderedMap::new(b"attestations".to_vec()),
+            count: 0,
         }
     }
 
     pub fn create_attestation(&mut self, payload: Payload) {
-        let attestation = Attestation::from_payload(payload);
+        let attestation = Attestation::from_payload(payload, self.count);
         self.listed_attestations
-            .insert(&attestation.attestation_id, &attestation);
+            .insert(&attestation.id, &attestation);
+        self.count += 1;
     }
 
-    pub fn get_attestation(&self, id: &String) -> Option<Attestation> {
-        self.listed_attestations.get(id)
+    pub fn get_attestation(&self, id: u32) -> Option<Attestation> {
+        self.listed_attestations.get(&id)
     }
 
     pub fn get_attestations(&self) -> Vec<Attestation> {
@@ -41,37 +44,37 @@ impl AttestationExplorer {
 #[near_bindgen]
 #[derive(Serialize, Deserialize, PanicOnDefault)]
 pub struct Payload {
-    attestation_id: String,
     project_id: String,
     description: String,
+    image: String,
     evidence_uri: String,
 }
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, Serialize, PanicOnDefault)]
 pub struct Attestation {
-    attestation_id: String,
+    id: u32,
     project_id: String,
     attestor: AccountId,
     description: String,
+    image: String,
     evidence_uri: String,
-    attested: u32,
+    created_at: u64,
 }
 
 #[near_bindgen]
 impl Attestation {
-    pub fn from_payload(payload: Payload) -> Self {
+    pub fn from_payload(payload: Payload, id: u32) -> Self {
         Self {
-            attestation_id: payload.attestation_id,
+            id,
             project_id: payload.project_id,
             attestor: env::signer_account_id(),
             description: payload.description,
+            image: payload.image,
             evidence_uri: payload.evidence_uri,
-            attested: 0,
+            created_at: env::block_timestamp(),
         }
     }
 
-    pub fn increment_attested_amount(&mut self) {
-        self.attested = self.attested + 1;
-    }
+   
 }
