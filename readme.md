@@ -1,4 +1,4 @@
-#   NEAR Attestation service ♻️
+#   Impact Attestation Provider ♻️
 
 Digital records signed by an individual, company, or organization to verify information about another person, entity, or thing
 
